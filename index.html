@@ -2,8 +2,28 @@
 <html lang="en">
   <head>
     <title>React Redux Lesson 2</title>
+    <style>
+        ol li:hover {cursor:pointer}
+        ol li.completed {text-decoration: line-through}
+    </style>
   </head>
   <body>
+    <h1>Udacity ToDo/Goal management App</h1>
+    <h2>ToDo List</h2>
+    <form id="todo_form">
+        <ol id="todo_list"></ol>
+        <input type="text" id="todo_input" name="todo_input" placeholder="Enter new todo"/>
+        <button id="addTodoBtn">Add todo</button>
+    </form>
+    <h2>Goals</h2>
+    <ol id="goal_list"></ol>
+    <form id="goal_form">
+            <input type="text" id="goal_input" name="goal_input" placeholder="Enter new goal"/>
+            <button id="addGoalBtn">Add goal</button>
+    </form>
+
+
+
     <script type="text/javascript">
       // This code would be in a library
       function createStore(reducer) {
@@ -146,6 +166,69 @@
           console.log("\napp updated: \n", appStore.getState());
       });
 
+      console.log("appStore created. State: ", appStore.getState());
+
+      addTodo = (evt) => {
+          evt.preventDefault();
+          const todo = document.getElementById('todo_input');
+          const currentState = appStore.getState();
+          let newId = (Math.random() + 1).toString(36).substring(7);
+          const subject = todo.value;
+          todo.value = ''
+          console.log("addTodo. state: ", currentState, " - todo: ", todo, " - new id: ", newId);
+          appStore.dispatch(addToDoAction({
+              id: newId,
+              subject: subject,
+              complete: false
+          }))
+          addNewListItem('todo_list', newId, subject);
+      }
+
+    addGoal = (evt) => {
+          evt.preventDefault();
+          const goal = document.getElementById('goal_input');
+          const currentState = appStore.getState();
+          let newId = (Math.random() + 1).toString(36).substr(10);
+          const subject = goal.value;
+          goal.value = ''
+          console.log("addGoal. state: ", currentState, " - goal: ", goal, " - new id: ", newId);
+          appStore.dispatch(addGoalAction({
+              id: newId,
+              subject: subject,
+              complete: false
+          }))
+          addNewListItem('goal_list', newId, subject);
+      }
+
+
+      document.getElementById('addTodoBtn').addEventListener('click', addTodo);
+      document.getElementById('addGoalBtn').addEventListener('click', addGoal);
+   
+      document.getElementById("todo_list").addEventListener("click",function(e) {
+        if (e.target && e.target.matches("li")) {
+            e.target.className == "completed" ? e.target.className = '' : e.target.className = 'completed'; // new class name here
+            appStore.dispatch(toggleToDoAction(e.target.id));
+        }
+      });
+      
+      /* this might not be needed for goals - we may want to do the delete function instead 
+      document.getElementById("goal_list").addEventListener("click",function(e) {
+        if (e.target && e.target.matches("li")) {
+            e.target.className == "completed" ? e.target.className = '' : e.target.className = 'completed'; // new class name here
+            appStore.dispatch(toggleGoalAction(e.target.id));
+        }
+      });
+      */
+      
+      addNewListItem = (div_id, item_id, txt) => {
+        let element = document.getElementById(div_id);
+          let newItem = document.createElement("li");
+          newItem.id = item_id;
+          let newNode = document.createTextNode(txt);
+          newItem.appendChild(newNode);
+          element.appendChild(newItem);
+      }
+      /*
       appStore.dispatch(addToDoAction(
           {
               id: 0,
@@ -172,6 +255,7 @@
       ));
 
       appStore.dispatch(toggleToDoAction(1));
+      */
 
       console.log("finished");
     </script>
