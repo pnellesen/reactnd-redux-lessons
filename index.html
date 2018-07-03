@@ -6,6 +6,10 @@
         ol li:hover {cursor:pointer}
         ol li.completed {text-decoration: line-through}
     </style>
+    <script src="https://unpkg.com/react@16.3.0-alpha.1/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@16.3.0-alpha.1/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/redux/3.7.2/redux.min.js"></script>
 
 </head>
@@ -24,7 +28,8 @@
             <button id="addGoalBtn">Add goal</button>
     </form>
 
-
+    <hr/>
+    <div id="app"></div>
 
     <script type="text/javascript">
 
@@ -141,6 +146,13 @@
 
       appStore.subscribe(() => {
           //console.log("\napp updated: \n", appStore.getState());
+          // redo the DOM when state is updated
+          const { goals, todos } = appStore.getState();
+          document.getElementById('goal_list').innerHTML = '';
+          document.getElementById('todo_list').innerHTML = '';
+          goals.forEach((item) => addNewListItem('goal_list',item.id, item.subject));
+          todos.forEach((item) => addNewListItem('todo_list',item.id, item.subject));
+
       });
 
       console.log("appStore created. State: ", appStore.getState());
@@ -156,7 +168,6 @@
               subject: subject,
               complete: false
           }));
-          if (addResult) addNewListItem('todo_list', newId, subject);
       }
 
     addGoal = (evt) => {
@@ -170,7 +181,6 @@
               subject: subject,
               complete: false
           }));
-          if (addResult) addNewListItem('goal_list', newId, subject);
       }
 
 
@@ -179,12 +189,8 @@
 
       document.getElementById("todo_list").addEventListener("click",function(e) {
             const thisTodo = appStore.getState().todos.find((todo) => todo.id === e.target.id);
-            thisTodo ? (
-                appStore.dispatch(toggleToDoAction(thisTodo.id)),
-                thisTodo.complete ? e.target.className = 'none' : e.target.className = 'completed' // new class name here            
-            ) : null
-                
-        //}
+            thisTodo ? appStore.dispatch(toggleToDoAction(thisTodo.id)) : null
+
       });
 
       addNewListItem = (div_id, item_id, txt) => {
@@ -194,6 +200,10 @@
         newItem.id = item_id;
         
         newItem.appendChild(newNode);
+
+
+        const thisTodo = appStore.getState().todos.find((todo) => todo.id === item_id);
+        if (thisTodo) newItem.style.textDecoration = thisTodo.complete ? 'line-through' : 'none';
         element.appendChild(newItem);
 
         let deleteBtn = document.createElement("button");
@@ -205,11 +215,91 @@
         deleteBtn.addEventListener('click', (e) => {
             e.preventDefault();
             div_id.indexOf('todo') >= 0 ? appStore.dispatch(deleteToDoAction(item_id)) : appStore.dispatch(deleteGoalAction(item_id));
-            element.removeChild(newItem);
         });
       }
 
+     generateId = () => {
+         return (Math.random() + 1).toString(36).substring(7);
+     }
       console.log("app initialized");
+    </script>
+    <script type='text/babel'>
+        function List(props) {
+            return (
+                <ul>
+                    {props.listItems.map((item) => <li>{item}</li>)}
+                </ul>
+            )
+        }
+
+    class Todos extends React.Component {
+        addItem = (evt) => {
+                evt.preventDefault();
+                console.log("todo clicked.")
+                const subject = this.input.value;
+                this.input.value = '';
+                const addResult = this.props.appStore.dispatch(addToDoAction({
+                    id: generateId(),
+                    subject: subject,
+                    complete: false
+                }));
+                console.log("AddItem - todo - result: ", addResult)
+            }
+        render() {
+            
+            return (
+                <div>
+                    <h2>Todo list here</h2>
+                    <List listItems={[]}/>
+                    <input type='text' placeholder='Enter new todo' ref={(input) => this.input = input}/>
+                    <button onClick={this.addItem}>Add todo</button>
+                </div>
+                
+            )
+        }
+    }
+
+    class Goals extends React.Component {
+        addItem = (evt) => {
+            evt.preventDefault();
+            const subject = this.input.value;
+            this.input.value = '';
+            const addResult = this.props.appStore.dispatch(addGoalAction({
+                    id: generateId(),
+                    subject: subject,
+                    complete: false
+                }));
+        }
+        render() {
+            return (
+                <div>
+                    <h2>Goal list here</h2>
+                    <List listItems={[]}/>
+                    <input type='text' placeholder='Enter new goal' ref={(input) => this.input = input}/>
+                    <button onClick={this.addItem}>Add goal</button>
+                </div>
+            )
+        }
+    }
+
+
+    class App extends React.Component {
+        render() {
+            return (
+                <div>
+                <h1>New React/Redux app</h1>
+                    <Todos appStore={this.props.appStore}/>
+                    <Goals appStore={this.props.appStore}/>
+                </div>
+                
+            )
+        }
+    }
+
+    ReactDOM.render(
+        <App appStore={appStore}/>,
+        document.getElementById('app')
+        )
     </script>
   </body>
 </html>
