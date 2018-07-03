@@ -6,7 +6,9 @@
         ol li:hover {cursor:pointer}
         ol li.completed {text-decoration: line-through}
     </style>
-  </head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/redux/3.7.2/redux.min.js"></script>
+
+</head>
   <body>
     <h1>Udacity ToDo/Goal management App</h1>
     <h2>ToDo List</h2>
@@ -25,52 +27,6 @@
 
 
     <script type="text/javascript">
-      // This code would be in a library
-      function createStore(reducer) {
-          console.log("Create Store - reducer: ", reducer);
-          /**
-           * this should have 4 parts:
-           * 1. the state of the app - done.
-           * 2. a way to get the state - done.
-           * 3. a way to set/update the state
-           * 4. a way to respond to/listen for changes to the state. - done
-           */
-          let state;
-
-          let listeners = []; // This will contain the callback functions sent to the subscribe function whenever it is invoked
-
-          const getState = () => state;
-
-          const subscribe = (listener) => {
-              //listener is a callback function sent when the subscribe function is set up
-              // there can be an arbitrary number of listeners set up in the app.
-              listeners.push(listener);
-
-              // Now we need to return a function to the subscriber which, when invoked, will remove or 'unsubscribe'
-              // this listener from list so that it is no longer notified when the state changes
-              return () => {
-                  console.log("removing listener %O", listener);
-                  listeners = listeners.filter((l) => l !== listener);//'listener' is the callback function sent to subscribe()
-              }
-
-          }
-
-          const dispatch = (action) => {
-              //do state updates here, based up the event/action that is passed.
-              //console.log("dispatch - action: ", action);
-              state = reducer(state, action);
-
-              // now loop through the current listeners list, invoking each listener function that was
-              // passed in each subscribe() call.
-              listeners.forEach((listener) => listener());
-          }
-
-          return {
-              getState,
-              subscribe,
-              dispatch
-          }
-      }
 
       // Set up the various action types as variables rather than strings. If we then later have a typo, it will flag an undefined error rather than just doing nothing.
       const ADD_TODO = 'ADD_TODO';
@@ -153,14 +109,22 @@
       // to avoid processing both action types in each dispatch, check to see which
       // action is being dispactched and only run the reducer for that particular action type. Otherwise
       // just return the current state for that reducer.
+
+      /*
       function app (state={}, action) {
           return {
               todos: action.type.indexOf('TODO') >= 0 ? todos(state.todos, action) : state.todos,
               goals: action.type.indexOf('GOAL') >= 0 ? goals(state.goals, action) : state.goals
           }
       }
+      */
 
-      const appStore = createStore(app);
+
+
+      const appStore = Redux.createStore(Redux.combineReducers({
+          todos,
+          goals
+      }));//Redux is coming from the redux.min.js
 
       appStore.subscribe(() => {
           console.log("\napp updated: \n", appStore.getState());
@@ -203,15 +167,15 @@
 
       document.getElementById('addTodoBtn').addEventListener('click', addTodo);
       document.getElementById('addGoalBtn').addEventListener('click', addGoal);
-   
+
       document.getElementById("todo_list").addEventListener("click",function(e) {
         if (e.target && e.target.matches("li")) {
             e.target.className == "completed" ? e.target.className = '' : e.target.className = 'completed'; // new class name here
             appStore.dispatch(toggleToDoAction(e.target.id));
         }
       });
-      
-      /* this might not be needed for goals - we may want to do the delete function instead 
+
+      /* this might not be needed for goals - we may want to do the delete function instead
       document.getElementById("goal_list").addEventListener("click",function(e) {
         if (e.target && e.target.matches("li")) {
             e.target.className == "completed" ? e.target.className = '' : e.target.className = 'completed'; // new class name here
@@ -219,7 +183,7 @@
         }
       });
       */
-      
+
       addNewListItem = (div_id, item_id, txt) => {
         let element = document.getElementById(div_id);
           let newItem = document.createElement("li");
@@ -227,6 +191,16 @@
           let newNode = document.createTextNode(txt);
           newItem.appendChild(newNode);
           element.appendChild(newItem);
+
+          let deleteBtn = document.createElement("button");
+          let deleteTxtNode = document.createTextNode("X");
+          deleteBtn.appendChild(deleteTxtNode);
+          newItem.appendChild(deleteBtn);
+          deleteBtn.addEventListener('click', (e) => {
+              e.preventDefault();
+              appStore.dispatch(deleteToDoAction(item_id));
+              element.removeChild(newItem);
+          });
       }
       /*
       appStore.dispatch(addToDoAction(
