@@ -227,30 +227,36 @@
         function List(props) {
             return (
                 <ul>
-                    {props.listItems.map((item) => <li>{item}</li>)}
+                    {props.listItems.map((item) => (
+                        <li key={item.id}><span>{item.subject}</span><button onClick={() => props.removeItem(item)}>X</button></li>
+                    ))}
                 </ul>
             )
         }
 
     class Todos extends React.Component {
         addItem = (evt) => {
-                evt.preventDefault();
-                console.log("todo clicked.")
-                const subject = this.input.value;
-                this.input.value = '';
-                const addResult = this.props.appStore.dispatch(addToDoAction({
-                    id: generateId(),
-                    subject: subject,
-                    complete: false
-                }));
-                console.log("AddItem - todo - result: ", addResult)
-            }
+            evt.preventDefault();
+            console.log("todo clicked.")
+            const subject = this.input.value;
+            this.input.value = '';
+            const addResult = this.props.appStore.dispatch(addToDoAction({
+                id: generateId(),
+                subject: subject,
+                complete: false
+            }));
+            console.log("AddItem - todo - result: ", addResult)
+        }
+        removeItem = (todo) => {
+           this.props.appStore.dispatch(deleteToDoAction(todo.id))
+        }
+
         render() {
             
             return (
                 <div>
                     <h2>Todo list here</h2>
-                    <List listItems={[]}/>
+                    <List listItems={this.props.todos} removeItem={this.removeItem}/>
                     <input type='text' placeholder='Enter new todo' ref={(input) => this.input = input}/>
                     <button onClick={this.addItem}>Add todo</button>
                 </div>
@@ -270,11 +276,14 @@
                     complete: false
                 }));
         }
+        removeItem = (goal) => {
+           this.props.appStore.dispatch(deleteGoalAction(goal.id))
+        }
         render() {
             return (
                 <div>
                     <h2>Goal list here</h2>
-                    <List listItems={[]}/>
+                    <List listItems={this.props.goals} removeItem={this.removeItem}/>
                     <input type='text' placeholder='Enter new goal' ref={(input) => this.input = input}/>
                     <button onClick={this.addItem}>Add goal</button>
                 </div>
@@ -284,12 +293,20 @@
 
 
     class App extends React.Component {
+        componentDidMount() {
+            const { appStore } = this.props;
+            appStore.subscribe(() => this.forceUpdate());// This is rarely done, but applies for this particular use case
+        }
+
+        
         render() {
+            const { appStore } = this.props;
+            const { todos, goals } = appStore.getState();
             return (
                 <div>
                 <h1>New React/Redux app</h1>
-                    <Todos appStore={this.props.appStore}/>
-                    <Goals appStore={this.props.appStore}/>
+                    <Todos todos={todos} appStore={this.props.appStore}/>
+                    <Goals goals={goals} appStore={this.props.appStore}/>
                 </div>
                 
             )
