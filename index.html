@@ -104,11 +104,13 @@
       }
 
       /**
-        Any rules to handle whether or not we update the state (via dispatch) go here.
-        'action' is one of our functions above: addTodoAction(), addGoalAction(), etc.
+        Now create a "checker" function which will work with Redux "applyMiddleWare" function to apply the logic to all
+        our reducers
       */
-      function checkAndDispatch(store, action) {
 
+      const checker = (store) => (next) => (action) => {
+        // logic from our old checkAndDispatch goes here. Is the logic to
+        // control whether or not we run our dispatch function
         if (action.type === ADD_TODO && action.todo.subject.toLowerCase().indexOf("bitcoin") >= 0) {
             return alert("Bitcoin not allowed!");
         }
@@ -117,14 +119,34 @@
             return alert("Bitcoin not allowed!");
         }
 
-        return store.dispatch(action)
-
+        return next(action)// next is the next reducer in the store. 
       }
+
+      /* old form, ES6 form above, much cleaner 
+      function checker(store) {
+          return function(next) {
+              return function(action) {
+                  // logic from our old checkAndDispatch goes here. Is the logic to
+                  // control whether or not we run our dispatch function
+                  if (action.type === ADD_TODO && action.todo.subject.toLowerCase().indexOf("bitcoin") >= 0) {
+                        return alert("Bitcoin not allowed!");
+                    }
+
+                    if (action.type === ADD_GOAL && action.goal.subject.toLowerCase().indexOf("bitcoin") >= 0) {
+                        return alert("Bitcoin not allowed!");
+                    }
+
+                    return next(action)// next is the next reducer in the store. 
+              }
+          }
+      }
+      */
+
 
       const appStore = Redux.createStore(Redux.combineReducers({
           todos,
           goals
-      }));//Redux is coming from the redux.min.js
+      }), Redux.applyMiddleware(checker));//Redux is coming from the redux.min.js
 
       appStore.subscribe(() => {
           console.log("\napp updated: \n", appStore.getState());
@@ -138,7 +160,7 @@
           let newId = (Math.random() + 1).toString(36).substring(7);
           const subject = todo.value;
           todo.value = ''
-          const addResult = checkAndDispatch(appStore, addToDoAction({
+          const addResult = appStore.dispatch(addToDoAction({
               id: newId,
               subject: subject,
               complete: false
@@ -152,7 +174,7 @@
           let newId = (Math.random() + 1).toString(36).substr(10);
           const subject = goal.value;
           goal.value = '';
-          const addResult = checkAndDispatch(appStore, addGoalAction({
+          const addResult = appStore.dispatch(addGoalAction({
               id: newId,
               subject: subject,
               complete: false
@@ -167,7 +189,7 @@
       document.getElementById("todo_list").addEventListener("click",function(e) {
             const thisTodo = appStore.getState().todos.find((todo) => todo.id === e.target.id);
             thisTodo ? (
-                checkAndDispatch(appStore, toggleToDoAction(thisTodo.id)),
+                appStore.dispatch(toggleToDoAction(thisTodo.id)),
                 thisTodo.complete ? e.target.className = 'none' : e.target.className = 'completed' // new class name here            
             ) : null
                 
@@ -191,7 +213,7 @@
 
         deleteBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            div_id.indexOf('todo') >= 0 ? checkAndDispatch(appStore, deleteToDoAction(item_id)) : checkAndDispatch(appStore, deleteGoalAction(item_id));
+            div_id.indexOf('todo') >= 0 ? appStore.dispatch(deleteToDoAction(item_id)) : appStore.dispatch(deleteGoalAction(item_id));
             element.removeChild(newItem);
         });
       }
