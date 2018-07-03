@@ -122,34 +122,25 @@
         return next(action)// next is the next reducer in the store. 
       }
 
-      /* old form, ES6 form above, much cleaner 
-      function checker(store) {
-          return function(next) {
-              return function(action) {
-                  // logic from our old checkAndDispatch goes here. Is the logic to
-                  // control whether or not we run our dispatch function
-                  if (action.type === ADD_TODO && action.todo.subject.toLowerCase().indexOf("bitcoin") >= 0) {
-                        return alert("Bitcoin not allowed!");
-                    }
-
-                    if (action.type === ADD_GOAL && action.goal.subject.toLowerCase().indexOf("bitcoin") >= 0) {
-                        return alert("Bitcoin not allowed!");
-                    }
-
-                    return next(action)// next is the next reducer in the store. 
-              }
-          }
-      }
-      */
-
+      /**
+       Add a new "middleware" called logger. This will be run by the applyMiddleware Redux function
+        */
+        const logger = (store) => (next) => (action) => {
+            console.group(action.type)
+            console.log('Action: ', action)
+            const result = next(action)
+            console.log('New State: ', store.getState())
+            console.groupEnd()
+            return result
+        }
 
       const appStore = Redux.createStore(Redux.combineReducers({
           todos,
           goals
-      }), Redux.applyMiddleware(checker));//Redux is coming from the redux.min.js
+      }), Redux.applyMiddleware(checker, logger));//Redux is coming from the redux.min.js
 
       appStore.subscribe(() => {
-          console.log("\napp updated: \n", appStore.getState());
+          //console.log("\napp updated: \n", appStore.getState());
       });
 
       console.log("appStore created. State: ", appStore.getState());
