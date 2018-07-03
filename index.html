@@ -103,21 +103,23 @@
           }
       }
 
-      // We only want one 'state' of the app to manage, so combine goals and todos into a single "app":
-      // to avoid processing both action types in each dispatch, check to see which
-      // action is being dispactched and only run the reducer for that particular action type. Otherwise
-      // just return the current state for that reducer.
-
-      /*
-      function app (state={}, action) {
-          return {
-              todos: action.type.indexOf('TODO') >= 0 ? todos(state.todos, action) : state.todos,
-              goals: action.type.indexOf('GOAL') >= 0 ? goals(state.goals, action) : state.goals
-          }
-      }
+      /**
+        Any rules to handle whether or not we update the state (via dispatch) go here.
+        'action' is one of our functions above: addTodoAction(), addGoalAction(), etc.
       */
+      function checkAndDispatch(store, action) {
 
+        if (action.type === ADD_TODO && action.todo.subject.toLowerCase().indexOf("bitcoin") >= 0) {
+            return alert("Bitcoin not allowed!");
+        }
 
+        if (action.type === ADD_GOAL && action.goal.subject.toLowerCase().indexOf("bitcoin") >= 0) {
+            return alert("Bitcoin not allowed!");
+        }
+
+        return store.dispatch(action)
+
+      }
 
       const appStore = Redux.createStore(Redux.combineReducers({
           todos,
@@ -136,12 +138,12 @@
           let newId = (Math.random() + 1).toString(36).substring(7);
           const subject = todo.value;
           todo.value = ''
-          appStore.dispatch(addToDoAction({
+          const addResult = checkAndDispatch(appStore, addToDoAction({
               id: newId,
               subject: subject,
               complete: false
-          }))
-          addNewListItem('todo_list', newId, subject);
+          }));
+          if (addResult) addNewListItem('todo_list', newId, subject);
       }
 
     addGoal = (evt) => {
@@ -149,13 +151,13 @@
           const goal = document.getElementById('goal_input');
           let newId = (Math.random() + 1).toString(36).substr(10);
           const subject = goal.value;
-          goal.value = ''
-          appStore.dispatch(addGoalAction({
+          goal.value = '';
+          const addResult = checkAndDispatch(appStore, addGoalAction({
               id: newId,
               subject: subject,
               complete: false
-          }))
-          addNewListItem('goal_list', newId, subject);
+          }));
+          if (addResult) addNewListItem('goal_list', newId, subject);
       }
 
 
@@ -165,21 +167,12 @@
       document.getElementById("todo_list").addEventListener("click",function(e) {
             const thisTodo = appStore.getState().todos.find((todo) => todo.id === e.target.id);
             thisTodo ? (
-                appStore.dispatch(toggleToDoAction(thisTodo.id)),
+                checkAndDispatch(appStore, toggleToDoAction(thisTodo.id)),
                 thisTodo.complete ? e.target.className = 'none' : e.target.className = 'completed' // new class name here            
             ) : null
                 
         //}
       });
-
-      /* this might not be needed for goals - we may want to do the delete function instead
-      document.getElementById("goal_list").addEventListener("click",function(e) {
-        if (e.target && e.target.matches("li")) {
-            e.target.className == "completed" ? e.target.className = '' : e.target.className = 'completed'; // new class name here
-            appStore.dispatch(toggleGoalAction(e.target.id));
-        }
-      });
-      */
 
       addNewListItem = (div_id, item_id, txt) => {
         let element = document.getElementById(div_id);
@@ -198,38 +191,10 @@
 
         deleteBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            appStore.dispatch(deleteToDoAction(item_id));
+            div_id.indexOf('todo') >= 0 ? checkAndDispatch(appStore, deleteToDoAction(item_id)) : checkAndDispatch(appStore, deleteGoalAction(item_id));
             element.removeChild(newItem);
         });
       }
-      /*
-      appStore.dispatch(addToDoAction(
-          {
-              id: 0,
-              subject: 'Finish the todo list',
-              complete: false
-          }
-      ));
-
-      appStore.dispatch(addToDoAction(
-          {
-              id: 1,
-              subject: 'Add goals',
-              complete: false
-          }
-      ));
-
-      appStore.dispatch(addGoalAction(
-          {
-              id: 0,
-              subject: 'Create one reducer for goals and todos?',
-              complete: false
-          }
-
-      ));
-
-      appStore.dispatch(toggleToDoAction(1));
-      */
 
       console.log("app initialized");
     </script>
