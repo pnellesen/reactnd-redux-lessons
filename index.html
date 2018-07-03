@@ -73,7 +73,6 @@
 
       // This would be part of our app code. This is the reducer function.
       function todos (state=[], action) {
-          console.log("\nTODO: ", action);
           switch (action.type) {
               case ADD_TODO:
                   return state.concat([action.todo]);
@@ -92,7 +91,6 @@
       }
 
       function goals (state=[], action) {
-          console.log("\nGOAL: ", action);
           switch (action.type) {
               case ADD_GOAL:
                   return state.concat([action.goal]);
@@ -135,11 +133,9 @@
       addTodo = (evt) => {
           evt.preventDefault();
           const todo = document.getElementById('todo_input');
-          const currentState = appStore.getState();
           let newId = (Math.random() + 1).toString(36).substring(7);
           const subject = todo.value;
           todo.value = ''
-          console.log("addTodo. state: ", currentState, " - todo: ", todo, " - new id: ", newId);
           appStore.dispatch(addToDoAction({
               id: newId,
               subject: subject,
@@ -151,11 +147,9 @@
     addGoal = (evt) => {
           evt.preventDefault();
           const goal = document.getElementById('goal_input');
-          const currentState = appStore.getState();
           let newId = (Math.random() + 1).toString(36).substr(10);
           const subject = goal.value;
           goal.value = ''
-          console.log("addGoal. state: ", currentState, " - goal: ", goal, " - new id: ", newId);
           appStore.dispatch(addGoalAction({
               id: newId,
               subject: subject,
@@ -169,10 +163,13 @@
       document.getElementById('addGoalBtn').addEventListener('click', addGoal);
 
       document.getElementById("todo_list").addEventListener("click",function(e) {
-        if (e.target && e.target.matches("li")) {
-            e.target.className == "completed" ? e.target.className = '' : e.target.className = 'completed'; // new class name here
-            appStore.dispatch(toggleToDoAction(e.target.id));
-        }
+            const thisTodo = appStore.getState().todos.find((todo) => todo.id === e.target.id);
+            thisTodo ? (
+                appStore.dispatch(toggleToDoAction(thisTodo.id)),
+                thisTodo.complete ? e.target.className = 'none' : e.target.className = 'completed' // new class name here            
+            ) : null
+                
+        //}
       });
 
       /* this might not be needed for goals - we may want to do the delete function instead
@@ -186,21 +183,24 @@
 
       addNewListItem = (div_id, item_id, txt) => {
         let element = document.getElementById(div_id);
-          let newItem = document.createElement("li");
-          newItem.id = item_id;
-          let newNode = document.createTextNode(txt);
-          newItem.appendChild(newNode);
-          element.appendChild(newItem);
+        let newItem = document.createElement("li");
+        let newNode = document.createTextNode(txt);
+        newItem.id = item_id;
+        
+        newItem.appendChild(newNode);
+        element.appendChild(newItem);
 
-          let deleteBtn = document.createElement("button");
-          let deleteTxtNode = document.createTextNode("X");
-          deleteBtn.appendChild(deleteTxtNode);
-          newItem.appendChild(deleteBtn);
-          deleteBtn.addEventListener('click', (e) => {
-              e.preventDefault();
-              appStore.dispatch(deleteToDoAction(item_id));
-              element.removeChild(newItem);
-          });
+        let deleteBtn = document.createElement("button");
+        let deleteTxtNode = document.createTextNode("X");
+
+        deleteBtn.appendChild(deleteTxtNode);
+        newItem.appendChild(deleteBtn);
+
+        deleteBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            appStore.dispatch(deleteToDoAction(item_id));
+            element.removeChild(newItem);
+        });
       }
       /*
       appStore.dispatch(addToDoAction(
@@ -231,7 +231,7 @@
       appStore.dispatch(toggleToDoAction(1));
       */
 
-      console.log("finished");
+      console.log("app initialized");
     </script>
   </body>
 </html>
