@@ -3,8 +3,8 @@
   <head>
     <title>React Redux Lesson 2</title>
     <style>
-        ol li:hover {cursor:pointer}
-        ol li.completed {text-decoration: line-through}
+        ol li:hover, ul li span:hover {cursor:pointer}
+        ol li.completed, ul li span.completed {text-decoration: line-through}
     </style>
     <script src="https://unpkg.com/react@16.3.0-alpha.1/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@16.3.0-alpha.1/umd/react-dom.development.js"></script>
@@ -15,20 +15,6 @@
 </head>
   <body>
     <h1>Udacity ToDo/Goal management App</h1>
-    <h2>ToDo List</h2>
-    <form id="todo_form">
-        <ol id="todo_list"></ol>
-        <input type="text" id="todo_input" name="todo_input" placeholder="Enter new todo"/>
-        <button id="addTodoBtn">Add todo</button>
-    </form>
-    <h2>Goals</h2>
-    <ol id="goal_list"></ol>
-    <form id="goal_form">
-            <input type="text" id="goal_input" name="goal_input" placeholder="Enter new goal"/>
-            <button id="addGoalBtn">Add goal</button>
-    </form>
-
-    <hr/>
     <div id="app"></div>
 
     <script type="text/javascript">
@@ -124,7 +110,7 @@
             return alert("Bitcoin not allowed!");
         }
 
-        return next(action)// next is the next reducer in the store. 
+        return next(action)// next is the next reducer in the store.
       }
 
       /**
@@ -145,90 +131,21 @@
       }), Redux.applyMiddleware(checker, logger));//Redux is coming from the redux.min.js
 
       appStore.subscribe(() => {
-          //console.log("\napp updated: \n", appStore.getState());
-          // redo the DOM when state is updated
           const { goals, todos } = appStore.getState();
-          document.getElementById('goal_list').innerHTML = '';
-          document.getElementById('todo_list').innerHTML = '';
-          goals.forEach((item) => addNewListItem('goal_list', item));
-          todos.forEach((item) => addNewListItem('todo_list', item));
-
       });
+
+      appStore.generateId = () => (Math.random() + 1).toString(36).substring(2,12);
 
       console.log("appStore created. State: ", appStore.getState());
 
-      addTodo = (evt) => {
-          evt.preventDefault();
-          const todo = document.getElementById('todo_input');
-          let newId = (Math.random() + 1).toString(36).substring(7);
-          const subject = todo.value;
-          todo.value = ''
-          const addResult = appStore.dispatch(addToDoAction({
-              id: newId,
-              subject: subject,
-              complete: false
-          }));
-      }
-
-    addGoal = (evt) => {
-          evt.preventDefault();
-          const goal = document.getElementById('goal_input');
-          let newId = (Math.random() + 1).toString(36).substr(10);
-          const subject = goal.value;
-          goal.value = '';
-          const addResult = appStore.dispatch(addGoalAction({
-              id: newId,
-              subject: subject,
-              complete: false
-          }));
-      }
-
-
-      document.getElementById('addTodoBtn').addEventListener('click', addTodo);
-      document.getElementById('addGoalBtn').addEventListener('click', addGoal);
-
-      document.getElementById("todo_list").addEventListener("click",function(e) {
-            const thisTodo = appStore.getState().todos.find((todo) => todo.id === e.target.id);
-            thisTodo ? appStore.dispatch(toggleToDoAction(thisTodo.id)) : null
-
-      });
-
-      addNewListItem = (div_id, item) => {
-        let element = document.getElementById(div_id);
-        let newItem = document.createElement("li");
-        let newNode = document.createTextNode(item.subject);
-        newItem.id = item.id;
-        
-        newItem.appendChild(newNode);
-
-
-        const thisTodo = appStore.getState().todos.find((todo) => todo.id === item.id);
-        if (thisTodo) newItem.style.textDecoration = thisTodo.complete ? 'line-through' : 'none';
-        element.appendChild(newItem);
-
-        let deleteBtn = document.createElement("button");
-        let deleteTxtNode = document.createTextNode("X");
-
-        deleteBtn.appendChild(deleteTxtNode);
-        newItem.appendChild(deleteBtn);
-
-        deleteBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            div_id.indexOf('todo') >= 0 ? appStore.dispatch(deleteToDoAction(item.id)) : appStore.dispatch(deleteGoalAction(item.id));
-        });
-      }
-
-     generateId = () => {
-         return (Math.random() + 1).toString(36).substring(7);
-     }
-      console.log("app initialized");
     </script>
+
     <script type='text/babel'>
         function List(props) {
             return (
                 <ul>
                     {props.listItems.map((item) => (
-                        <li key={item.id}><span>{item.subject}</span><button onClick={() => props.removeItem(item)}>X</button></li>
+                        <li key={item.id}><span  className={(item.complete && 'completed') || 'none'} onClick={() => props.toggleItem && props.toggleItem(item)}>{item.subject}</span><button onClick={() => props.removeItem(item)}>X</button></li>
                     ))}
                 </ul>
             )
@@ -237,30 +154,31 @@
     class Todos extends React.Component {
         addItem = (evt) => {
             evt.preventDefault();
-            console.log("todo clicked.")
             const subject = this.input.value;
             this.input.value = '';
             const addResult = this.props.appStore.dispatch(addToDoAction({
-                id: generateId(),
+                id: this.props.appStore.generateId(),
                 subject: subject,
                 complete: false
             }));
-            console.log("AddItem - todo - result: ", addResult)
         }
         removeItem = (todo) => {
            this.props.appStore.dispatch(deleteToDoAction(todo.id))
         }
+        toggleItem = (todo) => {
+            this.props.appStore.dispatch(toggleToDoAction(todo.id));
+        }
 
         render() {
-            
+
             return (
                 <div>
                     <h2>Todo list here</h2>
-                    <List listItems={this.props.todos} removeItem={this.removeItem}/>
+                    <List listItems={this.props.todos} removeItem={this.removeItem} toggleItem={this.toggleItem}/>
                     <input type='text' placeholder='Enter new todo' ref={(input) => this.input = input}/>
                     <button onClick={this.addItem}>Add todo</button>
                 </div>
-                
+
             )
         }
     }
@@ -271,7 +189,7 @@
             const subject = this.input.value;
             this.input.value = '';
             const addResult = this.props.appStore.dispatch(addGoalAction({
-                    id: generateId(),
+                    id: this.props.appStore.generateId(),
                     subject: subject,
                     complete: false
                 }));
@@ -298,7 +216,6 @@
             appStore.subscribe(() => this.forceUpdate());// This is rarely done, but applies for this particular use case
         }
 
-        
         render() {
             const { appStore } = this.props;
             const { todos, goals } = appStore.getState();
@@ -308,7 +225,7 @@
                     <Todos todos={todos} appStore={this.props.appStore}/>
                     <Goals goals={goals} appStore={this.props.appStore}/>
                 </div>
-                
+
             )
         }
     }
