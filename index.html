@@ -60,10 +60,10 @@
           }
       }
 
-      deleteGoalAction = (id) => {
+      deleteGoalAction = (goal) => {
           return {
               type: DELETE_GOAL,
-              id
+              goal
           }
       };
 
@@ -104,7 +104,7 @@
                   return state.concat([action.goal]);
                   break;
               case DELETE_GOAL:
-                  return state.filter((goal) => (goal.id !== action.id));
+                  return state.filter((goal) => (goal.id !== action.goal.id));
                   break;
               case FETCH_DATA:
                   return action.goals;
@@ -133,13 +133,13 @@
         if (action.type === ADD_TODO && action.todo.name.toLowerCase().indexOf("bitcoin") >= 0) {
             return alert("Bitcoin not allowed!");
         }
-        
+
         if (action.type === ADD_GOAL && action.goal.name.toLowerCase().indexOf("bitcoin") >= 0) {
             return alert("Bitcoin not allowed!");
         }
-        
+
         return next(action)// next is the next reducer in the store.
-        
+
       }
 
       /**
@@ -200,17 +200,15 @@
                 name: name,
                 complete: false
             }));
-            API.saveTodo(name).catch(() =>{
-                console.log("Save API failed");
-                alert('Problem Saving todo - please try again in a moment');
-                this.props.appStore.dispatch(deleteToDoAction(todo));
+            API.saveTodo(addResult.todo.name).catch(() =>{
+                alert('Problem Saving todo: ', addResult.todo, ' - please try again in a moment');
+                this.props.appStore.dispatch(deleteToDoAction(addResult.todo));
             })
 
         }
         removeItem = (todo) => {
            this.props.appStore.dispatch(deleteToDoAction(todo))
            API.deleteTodo(todo.id).catch(() =>{
-                console.log("toggle todo API failed");
                 alert('Problem updating todo - please try again in a moment');
                 this.props.appStore.dispatch(addToDoAction(todo));
             })
@@ -218,7 +216,6 @@
         toggleItem = (todo) => {
             this.props.appStore.dispatch(toggleToDoAction(todo));
             API.saveTodoToggle(todo.id).catch(() =>{
-                console.log("toggle todo API failed");
                 alert('Problem updating todo - please try again in a moment');
                 this.props.appStore.dispatch(toggleToDoAction(todo));
             })
@@ -237,9 +234,7 @@
             )
         }
     }
-    /**
-    * TODO: add API calls to goals
-    */
+
     class Goals extends React.Component {
         addItem = (evt) => {
             evt.preventDefault();
@@ -250,9 +245,17 @@
                     name: name,
                     complete: false
                 }));
+            API.saveGoal(addResult.goal.name).catch(() => {
+                alert('Problem updating todo - please try again in a moment');
+                this.props.appStore.dispatch(deleteGoalAction(addResult.goal));
+            })
         }
         removeItem = (goal) => {
-           this.props.appStore.dispatch(deleteGoalAction(goal.id))
+           this.props.appStore.dispatch(deleteGoalAction(goal))
+           API.deleteGoal(goal.id).catch(() =>{
+                alert('Problem updating todo - please try again in a moment');
+                this.props.appStore.dispatch(addGoalAction(goal));
+            })
         }
         render() {
             return (
