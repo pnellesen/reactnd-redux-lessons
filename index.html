@@ -39,17 +39,17 @@
           }
       };
 
-      deleteToDoAction = (id) => {
+      deleteToDoAction = (todo) => {
           return {
               type: DELETE_TODO,
-              id
+              todo
           }
       };
 
-      toggleToDoAction = (id) => {
+      toggleToDoAction = (todo) => {
           return {
               type: TOGGLE_TODO,
-              id
+              todo
           }
       };
 
@@ -83,10 +83,10 @@
                   return state.concat([action.todo]);
                   break;
               case DELETE_TODO:
-                  return state.filter((todo) => (todo.id !== action.id));
+                  return state.filter((todo) => (todo.id !== action.todo.id));
                   break;
               case TOGGLE_TODO:
-                  return state.map((todo) => todo.id !== action.id ? (todo) : (
+                  return state.map((todo) => todo.id !== action.todo.id ? (todo) : (
                       Object.assign({}, todo, {complete: !todo.complete}))
                     )
                   break;
@@ -132,20 +132,13 @@
         // control whether or not we run our dispatch function
         if (action.type === ADD_TODO && action.todo.name.toLowerCase().indexOf("bitcoin") >= 0) {
             return alert("Bitcoin not allowed!");
-        } else if (action.type === ADD_GOAL && action.goal.name.toLowerCase().indexOf("bitcoin") >= 0) {
-            return alert("Bitcoin not allowed!");
-        } else if (action.type === TOGGLE_TODO) {
-            console.log("TOGGLE_TODO: action:", action);
-            API.saveTodoToggle(action.id).then(function(result) {
-                console.log("toggle todo API result: ", result)
-                return next(action);// next is the next reducer in the store.
-            }, function(reject) {
-                console.log("toggle todo API rejected: ", reject);
-                return alert('Problem updating todo - please try again');
-            })
-        } else {
-            return next(action)// next is the next reducer in the store.
         }
+        
+        if (action.type === ADD_GOAL && action.goal.name.toLowerCase().indexOf("bitcoin") >= 0) {
+            return alert("Bitcoin not allowed!");
+        }
+        
+        return next(action)// next is the next reducer in the store.
         
       }
 
@@ -207,12 +200,28 @@
                 name: name,
                 complete: false
             }));
+            API.saveTodo(name).catch(() =>{
+                console.log("Save API failed");
+                alert('Problem Saving todo - please try again in a moment');
+                this.props.appStore.dispatch(deleteToDoAction(todo));
+            })
+
         }
         removeItem = (todo) => {
-           this.props.appStore.dispatch(deleteToDoAction(todo.id))
+           this.props.appStore.dispatch(deleteToDoAction(todo))
+           API.deleteTodo(todo.id).catch(() =>{
+                console.log("toggle todo API failed");
+                alert('Problem updating todo - please try again in a moment');
+                this.props.appStore.dispatch(addToDoAction(todo));
+            })
         }
         toggleItem = (todo) => {
-            this.props.appStore.dispatch(toggleToDoAction(todo.id));
+            this.props.appStore.dispatch(toggleToDoAction(todo));
+            API.saveTodoToggle(todo.id).catch(() =>{
+                console.log("toggle todo API failed");
+                alert('Problem updating todo - please try again in a moment');
+                this.props.appStore.dispatch(toggleToDoAction(todo));
+            })
         }
 
         render() {
@@ -228,7 +237,9 @@
             )
         }
     }
-
+    /**
+    * TODO: add API calls to goals
+    */
     class Goals extends React.Component {
         addItem = (evt) => {
             evt.preventDefault();
