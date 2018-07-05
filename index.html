@@ -3,14 +3,18 @@
   <head>
     <title>React Redux Lesson 2</title>
     <style>
-        ol li:hover, ul li span:hover {cursor:pointer}
+        ol li.todoItem:hover, ul li span.todoItem:hover {cursor:pointer}
         ol li.completed, ul li span.completed {text-decoration: line-through}
+        .loader {display: block}
+        .hidden {display: none}
     </style>
     <script src="https://unpkg.com/react@16.3.0-alpha.1/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@16.3.0-alpha.1/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/redux/3.7.2/redux.min.js"></script>
+    <script src="https://tylermcginnis.com/goals-todos-api/index.js"></script>
+
 
 </head>
   <body>
@@ -25,6 +29,7 @@
       const TOGGLE_TODO = 'TOGGLE_TODO';
       const ADD_GOAL = 'ADD_GOAL';
       const DELETE_GOAL = 'DELETE_GOAL';
+      const FETCH_DATA = 'FETCH_DATA';
 
       // set up functions for our various actions
       addToDoAction = (todo) => {
@@ -62,6 +67,15 @@
           }
       };
 
+      fetchDataAction = (todos, goals, loaderClass) => {
+          return {
+              type: FETCH_DATA,
+              todos,
+              goals,
+              loaderClass
+          }
+      }
+
       // This would be part of our app code. This is the reducer function.
       function todos (state=[], action) {
           switch (action.type) {
@@ -72,9 +86,12 @@
                   return state.filter((todo) => (todo.id !== action.id));
                   break;
               case TOGGLE_TODO:
-                  return state.map((todo) => todo.id !== action.id ? todo :
-                      Object.assign({}, todo, {complete: !todo.complete})
-                  );
+                  return state.map((todo) => todo.id !== action.id ? (todo) : (
+                      Object.assign({}, todo, {complete: !todo.complete}))
+                    )
+                  break;
+              case FETCH_DATA:
+                  return action.todos;
                   break;
               default:
                   return state
@@ -89,8 +106,20 @@
               case DELETE_GOAL:
                   return state.filter((goal) => (goal.id !== action.id));
                   break;
+              case FETCH_DATA:
+                  return action.goals;
+                  break;
               default:
                   return state
+          }
+      }
+
+      function loaderClass (state=[], action) {
+          switch (action.type) {
+             case FETCH_DATA:
+                return action.loaderClass;
+            default:
+                return state
           }
       }
 
@@ -98,19 +127,26 @@
         Now create a "checker" function which will work with Redux "applyMiddleWare" function to apply the logic to all
         our reducers
       */
-
       const checker = (store) => (next) => (action) => {
         // logic from our old checkAndDispatch goes here. Is the logic to
         // control whether or not we run our dispatch function
-        if (action.type === ADD_TODO && action.todo.subject.toLowerCase().indexOf("bitcoin") >= 0) {
+        if (action.type === ADD_TODO && action.todo.name.toLowerCase().indexOf("bitcoin") >= 0) {
             return alert("Bitcoin not allowed!");
-        }
-
-        if (action.type === ADD_GOAL && action.goal.subject.toLowerCase().indexOf("bitcoin") >= 0) {
+        } else if (action.type === ADD_GOAL && action.goal.name.toLowerCase().indexOf("bitcoin") >= 0) {
             return alert("Bitcoin not allowed!");
+        } else if (action.type === TOGGLE_TODO) {
+            console.log("TOGGLE_TODO: action:", action);
+            API.saveTodoToggle(action.id).then(function(result) {
+                console.log("toggle todo API result: ", result)
+                return next(action);// next is the next reducer in the store.
+            }, function(reject) {
+                console.log("toggle todo API rejected: ", reject);
+                return alert('Problem updating todo - please try again');
+            })
+        } else {
+            return next(action)// next is the next reducer in the store.
         }
-
-        return next(action)// next is the next reducer in the store.
+        
       }
 
       /**
@@ -127,11 +163,12 @@
 
       const appStore = Redux.createStore(Redux.combineReducers({
           todos,
-          goals
+          goals,
+          loaderClass
       }), Redux.applyMiddleware(checker, logger));//Redux is coming from the redux.min.js
 
       appStore.subscribe(() => {
-          const { goals, todos } = appStore.getState();
+          const { goals, todos, loaderClass } = appStore.getState();
       });
 
       appStore.generateId = () => (Math.random() + 1).toString(36).substring(2,12);
@@ -141,24 +178,33 @@
     </script>
 
     <script type='text/babel'>
+        function Loader(props) {
+            return (
+                <p className={props.loaderClass}>Loading lists...</p>
+            )
+        }
+
+
         function List(props) {
             return (
-                <ul>
-                    {props.listItems.map((item) => (
-                        <li key={item.id}><span  className={(item.complete && 'completed') || 'none'} onClick={() => props.toggleItem && props.toggleItem(item)}>{item.subject}</span><button onClick={() => props.removeItem(item)}>X</button></li>
-                    ))}
-                </ul>
+                props.listItems.length > 0 && (
+                    <ul>
+                    {props.listItems.map((item) => {
+                        return  <li key={item.id}><span  className={`${props.hasOwnProperty('toggleItem') && 'todoItem'} ${item.complete && 'completed'}`} onClick={() => props.toggleItem && props.toggleItem(item)}>{item.name}</span><button onClick={() => props.removeItem(item)}>X</button></li>
+                    })}
+                    </ul>
+                )
             )
         }
 
     class Todos extends React.Component {
         addItem = (evt) => {
             evt.preventDefault();
-            const subject = this.input.value;
+            const name = this.input.value;
             this.input.value = '';
             const addResult = this.props.appStore.dispatch(addToDoAction({
                 id: this.props.appStore.generateId(),
-                subject: subject,
+                name: name,
                 complete: false
             }));
         }
@@ -186,11 +232,11 @@
     class Goals extends React.Component {
         addItem = (evt) => {
             evt.preventDefault();
-            const subject = this.input.value;
+            const name = this.input.value;
             this.input.value = '';
             const addResult = this.props.appStore.dispatch(addGoalAction({
                     id: this.props.appStore.generateId(),
-                    subject: subject,
+                    name: name,
                     complete: false
                 }));
         }
@@ -214,14 +260,21 @@
         componentDidMount() {
             const { appStore } = this.props;
             appStore.subscribe(() => this.forceUpdate());// This is rarely done, but applies for this particular use case
+
+            /*From lesson video */
+            Promise.all([API.fetchTodos(), API.fetchGoals()]).then(function([todos, goals]) {
+                const loaderClass = 'hidden'
+                appStore.dispatch(fetchDataAction(todos, goals, loaderClass));
+            })
         }
 
         render() {
             const { appStore } = this.props;
-            const { todos, goals } = appStore.getState();
+            const { todos, goals, loaderClass } = appStore.getState();
             return (
                 <div>
                 <h1>New React/Redux app</h1>
+                    <Loader loaderClass={loaderClass}/>
                     <Todos todos={todos} appStore={this.props.appStore}/>
                     <Goals goals={goals} appStore={this.props.appStore}/>
                 </div>
