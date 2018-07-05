@@ -114,10 +114,10 @@
           }
       }
 
-      function loaderClass (state=[], action) {
+      function loaderClass (state='block', action) {
           switch (action.type) {
              case FETCH_DATA:
-                return action.loaderClass;
+                return 'hidden';
             default:
                 return state
           }
@@ -263,8 +263,7 @@
 
             /*From lesson video */
             Promise.all([API.fetchTodos(), API.fetchGoals()]).then(function([todos, goals]) {
-                const loaderClass = 'hidden'
-                appStore.dispatch(fetchDataAction(todos, goals, loaderClass));
+                appStore.dispatch(fetchDataAction(todos, goals));
             })
         }
 
