@@ -78,6 +78,18 @@
           }
       }
 
+      // Combine app and API delete todo code
+      handleDeleteTodo = (todo) => {
+          return (dispatch) => {
+            dispatch(deleteToDoAction(todo));// dispatch our App delete action here
+            return   API.deleteTodo(todo.id).catch(() => {// this will do the asynchronous API delete action.
+                alert('Problem deleting todo - please try again in a moment');
+                dispatch(addToDoAction(todo));
+            })
+          }
+        
+      }
+
       // This would be part of our app code. This is the reducer function.
       function todos (state=[], action) {
           switch (action.type) {
@@ -155,12 +167,13 @@
             console.groupEnd()
             return result
         }
+        
 
       const appStore = Redux.createStore(Redux.combineReducers({
           todos,
           goals,
           loaderClass
-      }), Redux.applyMiddleware(checker, logger));//Redux is coming from the redux.min.js
+      }), Redux.applyMiddleware(ReduxThunk.default, checker, logger));//Redux is coming from the redux.min.js. ReduxThunk.default does the action type check.
 
       appStore.subscribe(() => {
           const { goals, todos, loaderClass } = appStore.getState();
@@ -209,11 +222,8 @@
 
         }
         removeItem = (todo) => {
-           this.props.appStore.dispatch(deleteToDoAction(todo))
-           API.deleteTodo(todo.id).catch(() =>{
-                alert('Problem updating todo - please try again in a moment');
-                this.props.appStore.dispatch(addToDoAction(todo));
-            })
+            //return handleDeleteTodo(todo);
+            this.props.appStore.dispatch(handleDeleteTodo(todo));
         }
         toggleItem = (todo) => {
             this.props.appStore.dispatch(toggleToDoAction(todo));
