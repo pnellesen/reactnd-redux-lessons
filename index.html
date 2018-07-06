@@ -78,6 +78,18 @@
           }
       }
 
+      // Now pull the API code from componentDidMount into an action creator
+
+      handleApiFetch = (todos, goals) => {
+          return (dispatch) => {
+            return Promise.all([API.fetchTodos(), API.fetchGoals()]).then(function([todos, goals]) {
+                dispatch(fetchDataAction(todos, goals));
+            })
+
+          }
+      }
+
+
       // Combine app and API delete todo code
       handleDeleteTodo = (todo) => {
           return (dispatch) => {
@@ -316,11 +328,7 @@
         componentDidMount() {
             const { appStore } = this.props;
             appStore.subscribe(() => this.forceUpdate());// This is rarely done, but applies for this particular use case
-
-            /*From lesson video */
-            Promise.all([API.fetchTodos(), API.fetchGoals()]).then(function([todos, goals]) {
-                appStore.dispatch(fetchDataAction(todos, goals));
-            })
+            appStore.dispatch(handleApiFetch(todos, goals));
         }
 
         render() {
