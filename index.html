@@ -87,6 +87,32 @@
                 dispatch(addToDoAction(todo));
             })
           }
+      }
+      // Combine app and API Add todo code
+      handleAddToDo = (name) => {
+          const newId = appStore.generateId();
+          return (dispatch) => {
+              const addResult = dispatch(addToDoAction({
+                  id: newId,
+                  name: name,
+                  complete: false
+              }))
+              return API.saveTodo(addResult.todo.name).catch(() =>{
+                alert('Problem Saving todo: ' + addResult.todo.name +  ' - please try again in a moment');
+                dispatch(handleDeleteTodo(addResult.todo));
+            })
+          }
+
+      }
+      // Combine app and API toggle todo code
+      handleToggleTodo = (todo) => {
+          return (dispatch) => {
+            dispatch(toggleToDoAction(todo));
+            return API.saveTodoToggle(todo.id).catch(() =>{
+                alert('Problem updating todo ' + todo.name + ' - please try again in a moment');
+                dispatch(toggleToDoAction(todo));
+            })
+          }
         
       }
 
@@ -210,27 +236,13 @@
             evt.preventDefault();
             const name = this.input.value;
             this.input.value = '';
-            const addResult = this.props.appStore.dispatch(addToDoAction({
-                id: this.props.appStore.generateId(),
-                name: name,
-                complete: false
-            }));
-            API.saveTodo(addResult.todo.name).catch(() =>{
-                alert('Problem Saving todo: ', addResult.todo, ' - please try again in a moment');
-                this.props.appStore.dispatch(deleteToDoAction(addResult.todo));
-            })
-
+            this.props.appStore.dispatch(handleAddToDo(name));
         }
         removeItem = (todo) => {
-            //return handleDeleteTodo(todo);
             this.props.appStore.dispatch(handleDeleteTodo(todo));
         }
         toggleItem = (todo) => {
-            this.props.appStore.dispatch(toggleToDoAction(todo));
-            API.saveTodoToggle(todo.id).catch(() =>{
-                alert('Problem updating todo - please try again in a moment');
-                this.props.appStore.dispatch(toggleToDoAction(todo));
-            })
+            this.props.appStore.dispatch(handleToggleTodo(todo))
         }
 
         render() {
