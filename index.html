@@ -84,10 +84,22 @@
             dispatch(deleteToDoAction(todo));// dispatch our App delete action here
             return   API.deleteTodo(todo.id).catch(() => {// this will do the asynchronous API delete action.
                 alert('Problem deleting todo - please try again in a moment');
-                dispatch(addToDoAction(todo));
+                //dispatch(addToDoAction(todo));
+                dispatch(handleAddToDo(todo.name));
             })
           }
       }
+      // Combine app and API delete todo code
+    handleDeleteGoal = (goal) => {
+          return (dispatch) => {
+            dispatch(deleteGoalAction(goal));// dispatch our App delete action here
+            return   API.deleteGoal(goal.id).catch(() => {// this will do the asynchronous API delete action.
+                alert('Problem deleting todo - please try again in a moment');
+                dispatch(handleAddGoal(goal.name));
+            })
+          }
+      }
+
       // Combine app and API Add todo code
       handleAddToDo = (name) => {
           const newId = appStore.generateId();
@@ -104,6 +116,24 @@
           }
 
       }
+    // Combine app and API Add todo code
+    handleAddGoal = (name) => {
+          const newId = appStore.generateId();
+          return (dispatch) => {
+              const addResult = dispatch(addGoalAction({
+                  id: newId,
+                  name: name,
+                  complete: false
+              }))
+              return API.saveTodo(addResult.goal.name).catch(() =>{
+                alert('Problem Saving todo: ' + addResult.goal.name +  ' - please try again in a moment');
+                dispatch(handleDeleteGoal(addResult.goal));
+            })
+          }
+
+      }
+
+
       // Combine app and API toggle todo code
       handleToggleTodo = (todo) => {
           return (dispatch) => {
@@ -264,22 +294,10 @@
             evt.preventDefault();
             const name = this.input.value;
             this.input.value = '';
-            const addResult = this.props.appStore.dispatch(addGoalAction({
-                    id: this.props.appStore.generateId(),
-                    name: name,
-                    complete: false
-                }));
-            API.saveGoal(addResult.goal.name).catch(() => {
-                alert('Problem updating todo - please try again in a moment');
-                this.props.appStore.dispatch(deleteGoalAction(addResult.goal));
-            })
+            this.props.appStore.dispatch(handleAddGoal(name));
         }
         removeItem = (goal) => {
-           this.props.appStore.dispatch(deleteGoalAction(goal))
-           API.deleteGoal(goal.id).catch(() =>{
-                alert('Problem updating todo - please try again in a moment');
-                this.props.appStore.dispatch(addGoalAction(goal));
-            })
+            this.props.appStore.dispatch(handleDeleteGoal(goal));
         }
         render() {
             return (
