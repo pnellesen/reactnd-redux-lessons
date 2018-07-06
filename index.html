@@ -254,6 +254,17 @@
     </script>
 
     <script type='text/babel'>
+
+        function ConnectedLoader() {
+            const { loaderClass } = appStore.getState();
+            return (
+                <Context.Consumer>
+                    {(appStore) => (
+                        <Loader loaderClass={loaderClass}/>
+                    )}
+                </Context.Consumer>
+            )   
+        }
         function Loader(props) {
             return (
                 <p className={props.loaderClass}>Loading lists...</p>
@@ -272,23 +283,33 @@
                 )
             )
         }
-
+     class ConnectedTodos extends React.Component {
+        render () {
+            const { todos } = appStore.getState();
+            return (
+                <Context.Consumer>
+                    {(appStore) => (
+                        <Todos todos={todos} dispatch={appStore.dispatch}/>
+                    )}
+                </Context.Consumer>
+            )
+        }
+    }
     class Todos extends React.Component {
         addItem = (evt) => {
             evt.preventDefault();
             const name = this.input.value;
             this.input.value = '';
-            this.props.appStore.dispatch(handleAddToDo(name));
+            this.props.dispatch(handleAddToDo(name));
         }
         removeItem = (todo) => {
-            this.props.appStore.dispatch(handleDeleteTodo(todo));
+            this.props.dispatch(handleDeleteTodo(todo));
         }
         toggleItem = (todo) => {
-            this.props.appStore.dispatch(handleToggleTodo(todo))
+            this.props.dispatch(handleToggleTodo(todo))
         }
 
         render() {
-
             return (
                 <div>
                     <h2>Todo list here</h2>
@@ -296,7 +317,19 @@
                     <input type='text' placeholder='Enter new todo' ref={(input) => this.input = input}/>
                     <button onClick={this.addItem}>Add todo</button>
                 </div>
+            )
+        }
+    }
 
+    class ConnectedGoals extends React.Component {
+        render () {
+            const { goals } = appStore.getState();
+            return (
+                <Context.Consumer>
+                    {(appStore) => (
+                        <Goals goals={goals} dispatch={appStore.dispatch}/>
+                    )}
+                </Context.Consumer>
             )
         }
     }
@@ -306,10 +339,10 @@
             evt.preventDefault();
             const name = this.input.value;
             this.input.value = '';
-            this.props.appStore.dispatch(handleAddGoal(name));
+            this.props.dispatch(handleAddGoal(name));
         }
         removeItem = (goal) => {
-            this.props.appStore.dispatch(handleDeleteGoal(goal));
+            this.props.dispatch(handleDeleteGoal(goal));
         }
         render() {
             return (
@@ -319,35 +352,48 @@
                     <input type='text' placeholder='Enter new goal' ref={(input) => this.input = input}/>
                     <button onClick={this.addItem}>Add goal</button>
                 </div>
+                
             )
         }
     }
 
+    class ConnectedApp extends React.Component {
+        render() {
+            return (
+                <Context.Consumer>
+                    {(appStore) => (
+                        <App appStore={appStore}/>
+                    )}
+                </Context.Consumer>
+            )
+        }
+    }
 
     class App extends React.Component {
+
         componentDidMount() {
-            const { appStore } = this.props;
-            appStore.subscribe(() => this.forceUpdate());// This is rarely done, but applies for this particular use case
-            appStore.dispatch(handleApiFetch(todos, goals));
+            const { dispatch, subscribe } = this.props.appStore;
+            subscribe(() => this.forceUpdate());// This is rarely done, but applies for this particular use case
+            dispatch(handleApiFetch(todos, goals));
         }
 
         render() {
-            const { appStore } = this.props;
-            const { todos, goals, loaderClass } = appStore.getState();
             return (
                 <div>
-                <h1>New React/Redux app</h1>
-                    <Loader loaderClass={loaderClass}/>
-                    <Todos todos={todos} appStore={this.props.appStore}/>
-                    <Goals goals={goals} appStore={this.props.appStore}/>
+                    <h1>New React/Redux app</h1>
+                    <ConnectedLoader/>
+                    <ConnectedTodos/>
+                    <ConnectedGoals/>
                 </div>
-
             )
         }
     }
 
+    const Context = React.createContext();
     ReactDOM.render(
-        <App appStore={appStore}/>,
+        <Context.Provider value={appStore}>
+            <ConnectedApp/>
+        </Context.Provider>,
         document.getElementById('app')
         )
     </script>
