@@ -19,6 +19,8 @@
     <script src='https://unpkg.com/babel-standalone@6.15.0/babel.min.js'></script>
     <script src='https://tylermcginnis.com/goals-todos-api/index.js'></script>
     <script src='https://unpkg.com/redux-thunk@2.2.0/dist/redux-thunk.min.js'></script>
+    <script src="https://unpkg.com/react-redux@5.0.6/dist/react-redux.min.js"></script>
+
 
 
 
@@ -334,8 +336,6 @@
     // Will create a new "connect()()" function that will serve the same purpos for Context.Consumer that Provider did for Context.Provider
     // Will do 2 things: 1 - render a Component. 2 - pass that component data via props.
 
-
-
     class App extends React.Component {
         componentDidMount() {
             const { todos, goals, dispatch } = this.props;
@@ -355,77 +355,27 @@
     }
 
     // IMPORTANT NOTE!!! THESE WILL FAIL IF Goals/Todos/App have not been initialized before - ORDER IS IMPORTANT!!
-    const NewConnectedApp = connect((state) => ({
+    const NewConnectedApp = ReactRedux.connect((state) => ({
 
     }))(App)
 
-    const NewConnectedGoals = connect((state) => ({
+    const NewConnectedGoals = ReactRedux.connect((state) => ({
         goals: state.goals
     }))(Goals)
 
-    const NewConnectedTodos = connect((state) => ({
+    const NewConnectedTodos = ReactRedux.connect((state) => ({
         todos: state.todos
 
     }))(Todos);
 
-    const NewConnectedLoader = connect((state) => ({
+    const NewConnectedLoader = ReactRedux.connect((state) => ({
         loaderClass: state.loaderClass
     }))(Loader)
 
-
-    const Context = React.createContext();
-
-    function connect(mapStateToProps) {// mapStateToProps is the first function passed in by connect, i.e: mapStateToProps = (state) => ({})
-        return (Component) => {// Component is the component sent in the 2nd function, (App), (Goals), etc.
-            //need store.subscribe
-            //need store
-            class Receiver extends React.Component {
-                componentDidMount() {
-                    const { subscribe } = this.props.appStore;
-                    this.unsubscribe = subscribe(() => {this.forceUpdate()} );// This tells the component when the store changes
-                }
-                componentWillUnmount() {// need to make sure we remove this component from listeners when it's unmounted.
-                    this.unsubscribe();
-                }
-                render() {
-                    const { dispatch, getState } = this.props.appStore
-                    const state = getState();
-                    const stateNeeded = mapStateToProps(state);
-                    return (
-                        <Component { ...stateNeeded } dispatch={dispatch}/>
-                    )
-
-
-                }
-            }
-
-            class ConnectedComponent extends React.Component {
-                render() {
-                    return (
-                        <Context.Consumer>
-                            {(appStore) => <Receiver appStore={appStore}/>}
-                        </Context.Consumer>
-                    )
-                }
-            }
-            return ConnectedComponent
-        }
-
-    }
-
-    class Provider extends React.Component {
-        render () {
-            return (
-                <Context.Provider value={this.props.appStore}>
-                    {this.props.children}
-                </Context.Provider>
-            )
-        }
-    }
     ReactDOM.render(
-        <Provider appStore={appStore}>
+        <ReactRedux.Provider store={appStore}>
             <NewConnectedApp/>
-        </Provider>,
+        </ReactRedux.Provider>,
         document.getElementById('app')
         )
     </script>
