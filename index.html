@@ -8,13 +8,17 @@
         .loader {display: block}
         .hidden {display: none}
     </style>
-    <script src="https://unpkg.com/react@16.3.0-alpha.1/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@16.3.0-alpha.1/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/redux/3.7.2/redux.min.js"></script>
-    <script src="https://tylermcginnis.com/goals-todos-api/index.js"></script>
-    <script src="https://unpkg.com/redux-thunk@2.2.0/dist/redux-thunk.min.js"></script>
+
+    <script src='https://unpkg.com/react@16.3.0-alpha.1/umd/react.development.js'></script>
+    <script src='https://unpkg.com/react-dom@16.3.0-alpha.1/umd/react-dom.development.js'></script>
+
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/redux/3.7.2/redux.min.js'></script>
+
+
+    <script src='https://unpkg.com/babel-standalone@6.15.0/babel.min.js'></script>
+    <script src='https://tylermcginnis.com/goals-todos-api/index.js'></script>
+    <script src='https://unpkg.com/redux-thunk@2.2.0/dist/redux-thunk.min.js'></script>
 
 
 
@@ -155,7 +159,7 @@
                 dispatch(toggleToDoAction(todo));
             })
           }
-        
+
       }
 
       // This would be part of our app code. This is the reducer function.
@@ -235,7 +239,7 @@
             console.groupEnd()
             return result
         }
-        
+
 
       const appStore = Redux.createStore(Redux.combineReducers({
           todos,
@@ -255,16 +259,6 @@
 
     <script type='text/babel'>
 
-        function ConnectedLoader() {
-            const { loaderClass } = appStore.getState();
-            return (
-                <Context.Consumer>
-                    {(appStore) => (
-                        <Loader loaderClass={loaderClass}/>
-                    )}
-                </Context.Consumer>
-            )   
-        }
         function Loader(props) {
             return (
                 <p className={props.loaderClass}>Loading lists...</p>
@@ -283,22 +277,8 @@
                 )
             )
         }
-     class ConnectedTodos extends React.Component {
-        render () {
-            const { todos } = appStore.getState();
-            return (
-                <Context.Consumer>
-                    {(appStore) => (
-                        <Todos todos={todos} dispatch={appStore.dispatch}/>
-                    )}
-                </Context.Consumer>
-            )
-        }
-    }
-    const NewConnectedTodos = connect((state) => {
-        todos: appStore.todos;
 
-    })(Todos);
+
 
     class Todos extends React.Component {
         addItem = (evt) => {
@@ -326,22 +306,6 @@
         }
     }
 
-    const NewConnectedGoals = connect((state) => {
-        goals: state.goals;
-    })(Goals)
-
-    class ConnectedGoals extends React.Component {
-        render () {
-            const { goals } = appStore.getState();
-            return (
-                <Context.Consumer>
-                    {(appStore) => (
-                        <Goals goals={goals} dispatch={appStore.dispatch}/>
-                    )}
-                </Context.Consumer>
-            )
-        }
-    }
 
     class Goals extends React.Component {
         addItem = (evt) => {
@@ -361,36 +325,20 @@
                     <input type='text' placeholder='Enter new goal' ref={(input) => this.input = input}/>
                     <button onClick={this.addItem}>Add goal</button>
                 </div>
-                
+
             )
         }
     }
 
-    class ConnectedApp extends React.Component {
-        render() {
-            return (
-                <Context.Consumer>
-                    {(appStore) => (
-                        <App appStore={appStore}/>
-                    )}
-                </Context.Consumer>
-            )
-        }
-    }
+
     // Will create a new "connect()()" function that will serve the same purpos for Context.Consumer that Provider did for Context.Provider
     // Will do 2 things: 1 - render a Component. 2 - pass that component data via props.
-    const NewConnectedApp = connect((state) => {
-
-    })(App)
-
 
 
 
     class App extends React.Component {
-
         componentDidMount() {
-            const { dispatch, subscribe } = this.props.appStore;
-            subscribe(() => this.forceUpdate());// This is rarely done, but applies for this particular use case
+            const { todos, goals, dispatch } = this.props;
             dispatch(handleApiFetch(todos, goals));
         }
 
@@ -398,7 +346,7 @@
             return (
                 <div>
                     <h1>New React/Redux app</h1>
-                    <ConnectedLoader/>
+                    <NewConnectedLoader/>
                     <NewConnectedTodos/>
                     <NewConnectedGoals/>
                 </div>
@@ -406,31 +354,53 @@
         }
     }
 
+    // IMPORTANT NOTE!!! THESE WILL FAIL IF Goals/Todos/App have not been initialized before - ORDER IS IMPORTANT!!
+    const NewConnectedApp = connect((state) => ({
+
+    }))(App)
+
+    const NewConnectedGoals = connect((state) => ({
+        goals: state.goals
+    }))(Goals)
+
+    const NewConnectedTodos = connect((state) => ({
+        todos: state.todos
+
+    }))(Todos);
+
+    const NewConnectedLoader = connect((state) => ({
+        loaderClass: state.loaderClass
+    }))(Loader)
+
+
     const Context = React.createContext();
 
-    function connect(mapStateToProps) {// mapStateToProps is the first function passed in by connect((state) =>({}))
-        return (Component) => {
+    function connect(mapStateToProps) {// mapStateToProps is the first function passed in by connect, i.e: mapStateToProps = (state) => ({})
+        return (Component) => {// Component is the component sent in the 2nd function, (App), (Goals), etc.
             //need store.subscribe
             //need store
             class Receiver extends React.Component {
                 componentDidMount() {
-                    const { dispatch, subscribe } = this.props.appStore;
-                    this.unsubscribe = subscribe(() => this.forceUpdate() );// This tells the component when the store changes
+                    const { subscribe } = this.props.appStore;
+                    this.unsubscribe = subscribe(() => {this.forceUpdate()} );// This tells the component when the store changes
                 }
                 componentWillUnmount() {// need to make sure we remove this component from listeners when it's unmounted.
                     this.unsubscribe();
                 }
                 render() {
-                    const {dispatch, getState} = this.props.appStore
+                    const { dispatch, getState } = this.props.appStore
                     const state = getState();
                     const stateNeeded = mapStateToProps(state);
                     return (
-                        <Component {...stateNeeded} dispatch={dispatch}/>
+                        <Component { ...stateNeeded } dispatch={dispatch}/>
                     )
+
+
                 }
             }
+
             class ConnectedComponent extends React.Component {
-                render () {
+                render() {
                     return (
                         <Context.Consumer>
                             {(appStore) => <Receiver appStore={appStore}/>}
@@ -440,6 +410,7 @@
             }
             return ConnectedComponent
         }
+
     }
 
     class Provider extends React.Component {
